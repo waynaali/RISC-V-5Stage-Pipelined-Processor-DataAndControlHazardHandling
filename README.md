@@ -97,7 +97,8 @@ Waveform screenshots are available in `/doc`.
 
 ## Architecture Diagram
 
-![Pipeline Diagram](doc/A_README_for_a_RISC-V_pipelined_processor_project_.png)
+![Pipeline Diagram](https://github.com/waynaali/RISC-V-5Stage-Pipelined-Processor-DataAndControlHazardHandling/blob/main/doc/blockDiagram.png)
+![Pipeline Diagram](https://github.com/waynaali/RISC-V-5Stage-Pipelined-Processor-DataAndControlHazardHandling/blob/main/doc/blockDiagram%20(2).png)
 
 - Shows **pipeline stages, forwarding paths, stall cycles, and branch flush points**  
 
@@ -135,4 +136,3 @@ RISC-V, 5-stage pipeline, SystemVerilog, forwarding, hazard detection, stall log
 - Forwarding networks  
 - Control hazard flush handling  
 - SystemVerilog RTL design and verification
-```
