@@ -46,8 +46,7 @@ module Alu_decoder(
                     3'b010: ALUControl = 3'b101;                         // SLT
                     3'b110: ALUControl = 3'b011;                         // OR
                     3'b111: ALUControl = 3'b010;                         // AND
-                    default: ALUControl = 3'bxxx;                        // Undefined
-                endcase
+                    default: ALUControl = 3'b000;                endcase
             end
         endcase
     end
