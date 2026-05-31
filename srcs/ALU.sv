@@ -19,7 +19,7 @@
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-//      - Supports ADD, SUB, AND, OR, and shift-right operations.
+//      - Supports ADD, SUB, AND, OR, and SLT operations.
 //      - Outputs a Zero flag for branch decisions.
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -34,12 +34,12 @@ module ALU(
     // Combinational ALU logic
     always_comb begin
         case (ALUControl)
-            3'b000: ALUResult = SrcA + SrcB;   // ADD
-            3'b001: ALUResult = SrcA - SrcB;   // SUB
-            3'b101: ALUResult = SrcA >> SrcB;  // Shift Right
-            3'b011: ALUResult = SrcA | SrcB;   // OR
-            3'b010: ALUResult = SrcA & SrcB;   // AND
-            default: ALUResult = 32'b0;        // Default to 0
+            3'b000: ALUResult = SrcA + SrcB;                         // ADD
+            3'b001: ALUResult = SrcA - SrcB;                         // SUB
+            3'b010: ALUResult = SrcA & SrcB;                         // AND
+            3'b011: ALUResult = SrcA | SrcB;                         // OR
+            3'b101: ALUResult = ($signed(SrcA) < $signed(SrcB)) ? 32'd1 : 32'd0; // SLT
+            default: ALUResult = 32'b0;                              // Default to 0
         endcase
 
         // Set Zero flag

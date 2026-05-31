@@ -26,40 +26,39 @@ module rvhazard(
 /////////////////////////
 // Pipeline Control Signals
 /////////////////////////
-logic ZeroE;             // ALU zero flag (used for branch decisions)
-logic StallF, StallD;    // Pipeline stall signals for IF and ID stages
-logic FlushE, FlushD;    // Pipeline flush signals for EX and ID stages
-logic PCSrcE;            // PC source signal (branch/jump decision)
-
+logic ZeroE;
+logic StallF, StallD;
+logic FlushE, FlushD;
+logic PCSrcE;
+logic [2:0] funct3E;
 /////////////////////////
 // Forwarding Unit Signals
 /////////////////////////
-logic [1:0] ForwardAE, ForwardBE; // Forwarding mux control for ALU inputs
+logic [1:0] ForwardAE, ForwardBE;
 
 /////////////////////////
 // Control Signals
 /////////////////////////
-logic RegWriteM, RegWriteE, RegWriteW; // Register write signals
-logic MemWriteM, MemWriteE;            // Memory write signals
-logic JumpD, BranchD, JumpE, BranchE;  // Jump and branch signals
-logic ALUSrcE, ALUSrcD;                // ALU source mux control
-logic [1:0] ResultSrcD, ResultSrcE, ResultSrcM, ResultSrcW; // Result select signals
-logic [2:0] ALUControlD, ALUControlE; // ALU control signals
-logic [1:0] ImmSrcD;                   // Immediate source
+logic RegWriteD, RegWriteE, RegWriteM, RegWriteW;
+logic MemWriteD, MemWriteE, MemWriteM;
+logic JumpD, BranchD, JumpE, BranchE;
+logic ALUSrcE, ALUSrcD;
+logic [1:0] ResultSrcD, ResultSrcE, ResultSrcM, ResultSrcW;
+logic [2:0] ALUControlD, ALUControlE;
+logic [1:0] ImmSrcD;
 
 /////////////////////////
 // Data Signals
 /////////////////////////
-logic [31:0] SrcAE, SrcBE, SrcB;       // ALU input sources
+logic [31:0] SrcAE, SrcBE, SrcB;
 logic [31:0] ALUResultE, ALUResultM, ALUResultW;
-logic [31:0] ReadDataM, ReadDataW;    // Memory read data
-logic [31:0] WriteDataE;               // Data to write to memory
-logic [31:0] PCTargetE, PCNext;       // PC target and next PC
-logic [31:0] ResultW;                  // Data to write back
-logic [31:0] RD1D, RD2D;               // Register file outputs
-logic [31:0] RD1E, RD2E, RD2M;        // EX/MEM stage data
-logic [31:0] ALUResultM;               // MEM stage ALU result
-logic [31:0] ImmExtendE, ImmExtendD;   // Extended immediate values
+logic [31:0] ReadDataM, ReadDataW;
+logic [31:0] WriteDataE;
+logic [31:0] PCTargetE, PCNext;
+logic [31:0] ResultW;
+logic [31:0] RD1D, RD2D;
+logic [31:0] RD1E, RD2E, RD2M;
+logic [31:0] ImmExtendE, ImmExtendD;
 
 /////////////////////////
 // PC and Instruction Signals
@@ -76,8 +75,24 @@ logic [4:0] rs1E, rs2E, Rs1D, Rs2D, rdE, rdM, rdW;
 /////////////////////////
 // PC Source Logic
 /////////////////////////
-assign PCSrcE = (BranchE & ZeroE) | JumpE;
+always_comb begin
+    PCSrcE = 1'b0;
 
+    if (JumpE) begin
+        PCSrcE = 1'b1;
+    end
+    else if (BranchE) begin
+        case (funct3E)
+            3'b000: PCSrcE =  ZeroE;                         // BEQ
+            3'b001: PCSrcE = ~ZeroE;                         // BNE
+            3'b100: PCSrcE = ($signed(SrcAE) < $signed(SrcB)); // BLT
+            3'b101: PCSrcE = ($signed(SrcAE) >= $signed(SrcB));// BGE
+            3'b110: PCSrcE = (SrcAE < SrcB);                 // BLTU
+            3'b111: PCSrcE = (SrcAE >= SrcB);                // BGEU
+            default: PCSrcE = 1'b0;
+        endcase
+    end
+end
 /////////////////////////
 // Module Instantiations
 /////////////////////////
@@ -198,7 +213,9 @@ ID_IE ID_IE(
     .JumpE(JumpE),
     .BranchE(BranchE),
     .ALUSrcE(ALUSrcE),
-    .ALUControlE(ALUControlE)
+    .ALUControlE(ALUControlE),
+    .funct3D(InstrD[14:12]),
+    .funct3E(funct3E)
 );
 
 // ALU operand selection with forwarding
@@ -220,7 +237,7 @@ IE_IM IE_IM(
     .clk(clk),
     .reset(reset),
     .ALUResultE(ALUResultE),
-    .RD2E(RD2E),
+    .RD2E(SrcB),
     .RegWriteM(RegWriteM),
     .MemWriteM(MemWriteM),
     .ResultSrcM(ResultSrcM),
