@@ -1,26 +1,8 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 
-// Design Name: 
-// Module Name: rvhazard
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-//   Top-level pipelined RISC-V processor with hazard detection, forwarding, and 
-//   data memory interface. Implements a 5-stage pipeline (IF, ID, EX, MEM, WB).
-//   This module instantiates all pipeline registers, ALU, memories, and hazard/forwarding units.
-//
-// Revision:
-// Revision 0.01 - File Created
-//////////////////////////////////////////////////////////////////////////////////
 
 module rvhazard(
-    input logic clk,        // Clock
-    input logic reset       // Reset
+    input logic clk,
+    input logic reset
 );
 
 /////////////////////////
@@ -31,6 +13,15 @@ logic StallF, StallD;
 logic FlushE, FlushD;
 logic PCSrcE;
 logic [2:0] funct3E;
+
+/////////////////////////
+// I-Cache Signals
+/////////////////////////
+logic [31:0] icache_mem_addr;
+logic [31:0] icache_mem_rdata;
+logic        icache_hit;
+logic        icache_stall;
+
 /////////////////////////
 // Forwarding Unit Signals
 /////////////////////////
@@ -83,21 +74,21 @@ always_comb begin
     end
     else if (BranchE) begin
         case (funct3E)
-            3'b000: PCSrcE =  ZeroE;                         // BEQ
-            3'b001: PCSrcE = ~ZeroE;                         // BNE
-            3'b100: PCSrcE = ($signed(SrcAE) < $signed(SrcB)); // BLT
-            3'b101: PCSrcE = ($signed(SrcAE) >= $signed(SrcB));// BGE
-            3'b110: PCSrcE = (SrcAE < SrcB);                 // BLTU
-            3'b111: PCSrcE = (SrcAE >= SrcB);                // BGEU
+            3'b000: PCSrcE =  ZeroE;
+            3'b001: PCSrcE = ~ZeroE;
+            3'b100: PCSrcE = ($signed(SrcAE) < $signed(SrcB));
+            3'b101: PCSrcE = ($signed(SrcAE) >= $signed(SrcB));
+            3'b110: PCSrcE = (SrcAE < SrcB);
+            3'b111: PCSrcE = (SrcAE >= SrcB);
             default: PCSrcE = 1'b0;
         endcase
     end
 end
+
 /////////////////////////
 // Module Instantiations
 /////////////////////////
 
-// Forwarding Unit
 forwarding_unit forwarding_unit(
     .Rs2E(rs2E),
     .Rs1E(rs1E),
@@ -109,20 +100,37 @@ forwarding_unit forwarding_unit(
     .ForwardBE(ForwardBE)
 );
 
-// Adders for PC calculations
 Adder PC_Plus_4(.A(PCF), .B(32'd4), .Sum(PCPlus4F));
 Adder PC_Target(.A(PCE), .B(ImmExtendE), .Sum(PCTargetE));
 
-// PC Mux
 mux2 PC_Next(.d0(PCPlus4F), .d1(PCTargetE), .s(PCSrcE), .y(PCNext));
 
-// Program Counter
-program_counter ProgramCounter(.clk(clk), .reset(reset), .en(~StallF), .PCNext(PCNext), .PC(PCF));
+program_counter ProgramCounter(
+    .clk(clk),
+    .reset(reset),
+    .en(~StallF),
+    .PCNext(PCNext),
+    .PC(PCF)
+);
 
-// Instruction Memory
-instr_mem instruction_memory(.A(PCF), .RD(InstrF));
+// I-Cache between PC and Instruction Memory
+icache instruction_cache(
+    .clk       (clk),
+    .rst       (reset),
+    .cpu_addr  (PCF),
+    .cpu_instr (InstrF),
+    .hit       (icache_hit),
+    .stall     (icache_stall),
+    .mem_addr  (icache_mem_addr),
+    .mem_rdata (icache_mem_rdata)
+);
 
-// IF/ID Pipeline Register
+// Lower Instruction Memory behind I-Cache
+instr_mem instruction_memory(
+    .A  (icache_mem_addr),
+    .RD (icache_mem_rdata)
+);
+
 IF_ID IF_ID(
     .clk(clk),
     .reset(reset),
@@ -136,7 +144,6 @@ IF_ID IF_ID(
     .PCPlus4D(PCPlus4D)
 );
 
-// Register File
 register_file register_file(
     .clk(clk),
     .A1(InstrD[19:15]),
@@ -148,10 +155,12 @@ register_file register_file(
     .rd2(RD2D)
 );
 
-// Immediate Extend Unit
-ExtendUnit Extend(.Instr(InstrD), .ImmSrc(ImmSrcD), .ImmExtend(ImmExtendD));
+ExtendUnit Extend(
+    .Instr(InstrD),
+    .ImmSrc(ImmSrcD),
+    .ImmExtend(ImmExtendD)
+);
 
-// Control Unit
 control_unit control_unit(
     .op(InstrD[6:0]),
     .funct3(InstrD[14:12]),
@@ -166,7 +175,6 @@ control_unit control_unit(
     .ALUControl(ALUControlD)
 );
 
-// Hazard Unit
 HazardUnit hazard_unit(
     .Rs1D(InstrD[19:15]),
     .Rs2D(InstrD[24:20]),
@@ -179,7 +187,6 @@ HazardUnit hazard_unit(
     .FlushD(FlushD)
 );
 
-// ID/EX Pipeline Register
 ID_IE ID_IE(
     .clk(clk),
     .reset(reset),
@@ -218,12 +225,29 @@ ID_IE ID_IE(
     .funct3E(funct3E)
 );
 
-// ALU operand selection with forwarding
-mux2 Src_B(.d0(SrcB), .d1(ImmExtendE), .s(ALUSrcE), .y(SrcBE));
-mux3to1 mux(.d0(RD1E), .d1(ResultW), .d2(ALUResultM), .s(ForwardAE), .y(SrcAE));
-mux3to1 mux2(.d0(RD2E), .d1(ResultW), .d2(ALUResultM), .s(ForwardBE), .y(SrcB));
+mux2 Src_B(
+    .d0(SrcB),
+    .d1(ImmExtendE),
+    .s(ALUSrcE),
+    .y(SrcBE)
+);
 
-// ALU
+mux3to1 mux(
+    .d0(RD1E),
+    .d1(ResultW),
+    .d2(ALUResultM),
+    .s(ForwardAE),
+    .y(SrcAE)
+);
+
+mux3to1 mux2(
+    .d0(RD2E),
+    .d1(ResultW),
+    .d2(ALUResultM),
+    .s(ForwardBE),
+    .y(SrcB)
+);
+
 ALU ALU(
     .SrcA(SrcAE),
     .SrcB(SrcBE),
@@ -232,7 +256,6 @@ ALU ALU(
     .Zero(ZeroE)
 );
 
-// EX/MEM Pipeline Register
 IE_IM IE_IM(
     .clk(clk),
     .reset(reset),
@@ -252,7 +275,6 @@ IE_IM IE_IM(
     .PCPlus4M(PCPlus4M)
 );
 
-// Data Memory
 data_mem data_memory(
     .clk(clk),
     .we(MemWriteM),
@@ -261,7 +283,6 @@ data_mem data_memory(
     .ReadData(ReadDataM)
 );
 
-// MEM/WB Pipeline Register
 IM_IW IM_IW(
     .clk(clk),
     .reset(reset),
@@ -279,7 +300,6 @@ IM_IW IM_IW(
     .ResultSrcW(ResultSrcW)
 );
 
-// Result Selection for Write-back
 mux3to1 result(
     .d0(ALUResultW),
     .d1(ReadDataW),

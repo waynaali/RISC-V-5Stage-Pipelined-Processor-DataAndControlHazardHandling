@@ -19,6 +19,10 @@ FF718393
 00910133
 0221A023
 00210063
+00000013
+00000013
+00000013
+00000013
 
 //main:               RISC-V Assembly           Description             Address  Machine Code
 //                    addi x2, x0, 5             x2 = 5                   0        00500113
