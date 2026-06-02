@@ -4,12 +4,14 @@ module data_mem(
     input  logic [3:0]  be,
     input  logic [31:0] A,
     input  logic [31:0] WD,
-    output logic [31:0] ReadData
+    output logic [31:0] ReadData,
+    output logic        ready
 );
 
     logic [31:0] RAM [0:255];
 
     assign ReadData = RAM[A[31:2]];
+    assign ready    = 1'b1;
 
     always_ff @(posedge clk) begin
         if (we) begin

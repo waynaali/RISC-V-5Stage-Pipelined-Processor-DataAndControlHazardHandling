@@ -24,16 +24,18 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module IM_IW(
-    input  logic        clk,        // Clock signal
-    input  logic        reset,      // Synchronous reset
-    input  logic [31:0] ALUResultM, // ALU result from Memory stage
-    input  logic [31:0] ReadDataM,  // Data read from memory
-    input  logic [31:0] PCPlus4M,   // PC+4 from Memory stage
-    input  logic        RegWriteM,  // Control signals from Memory stage
-    input  logic [1:0]  ResultSrcM,
-    input  logic [4:0]  rdM,        // Destination register
+    input  logic        clk,
+    input  logic        reset,
+    input  logic        en,
 
-    output logic [31:0] ALUResultW, // Outputs to Write Back stage
+    input  logic [31:0] ALUResultM,
+    input  logic [31:0] ReadDataM,
+    input  logic [31:0] PCPlus4M,
+    input  logic        RegWriteM,
+    input  logic [1:0]  ResultSrcM,
+    input  logic [4:0]  rdM,
+
+    output logic [31:0] ALUResultW,
     output logic [31:0] ReadDataW,
     output logic [31:0] PCPlus4W,
     output logic [4:0]  rdW,
@@ -41,26 +43,23 @@ module IM_IW(
     output logic [1:0]  ResultSrcW
 );
 
-    // Sequential logic for IM/IW pipeline register
     always_ff @(posedge clk) begin
         if (reset) begin
-            // Reset all outputs to 0
-            ALUResultW  <= 32'b0;
-            ReadDataW   <= 32'b0;
-            PCPlus4W    <= 32'b0;
-            rdW         <= 5'b0;
-            RegWriteW   <= 1'b0;
-            ResultSrcW  <= 2'b0;
-        end else begin
-            // Transfer signals from Memory stage to Write Back stage
-            ALUResultW  <= ALUResultM;
-            ReadDataW   <= ReadDataM;
-            PCPlus4W    <= PCPlus4M;
-            rdW         <= rdM;
-            RegWriteW   <= RegWriteM;
-            ResultSrcW  <= ResultSrcM;
+            ALUResultW <= 32'b0;
+            ReadDataW  <= 32'b0;
+            PCPlus4W   <= 32'b0;
+            rdW        <= 5'b0;
+            RegWriteW  <= 1'b0;
+            ResultSrcW <= 2'b0;
+        end
+        else if (en) begin
+            ALUResultW <= ALUResultM;
+            ReadDataW  <= ReadDataM;
+            PCPlus4W   <= PCPlus4M;
+            rdW        <= rdM;
+            RegWriteW  <= RegWriteM;
+            ResultSrcW <= ResultSrcM;
         end
     end
 
 endmodule
-

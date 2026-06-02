@@ -17,26 +17,29 @@ module tb_risc;
         clk   = 0;
         reset = 1;
 
-        #20;
+        #30;
         reset = 0;
 
-        #2000;
+        #3000;
         $finish;
     end
 
+    // Console verification monitor
     initial begin
-        $display("Time\tPCF\t\tInstrF\t\tIHit\tIStall\tDAddr\t\tWData\t\tRData\t\tDHit\tDStall\tDWe\tDBe");
-        $monitor("%0t\t%h\t%h\t%b\t%b\t%h\t%h\t%h\t%b\t%b\t%b\t%b",
+        $display("Time\tPCF\t\tInstrF\t\tIHit\tIStall\tIReq\tDAddr\t\tWData\t\tRData\t\tDHit\tDStall\tDReq\tDWe\tDBe");
+        $monitor("%0t\t%h\t%h\t%b\t%b\t%b\t%h\t%h\t%h\t%b\t%b\t%b\t%b\t%b",
                  $time,
                  top.PCF,
                  top.InstrF,
                  top.icache_hit,
                  top.icache_stall,
+                 top.icache_mem_req,
                  top.ALUResultM,
                  top.RD2M,
                  top.ReadDataM,
                  top.dcache_hit,
                  top.dcache_stall,
+                 top.dcache_mem_req,
                  top.dcache_mem_we,
                  top.dcache_mem_be);
     end

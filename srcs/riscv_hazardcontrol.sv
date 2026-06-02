@@ -34,6 +34,8 @@ logic [3:0]  dcache_mem_be;
 logic [31:0] dcache_mem_addr;
 logic [31:0] dcache_mem_wdata;
 logic [31:0] dcache_mem_rdata;
+logic dcache_mem_req;
+logic dcache_mem_ready;
 
 /////////////////////////
 // Forwarding Unit Signals
@@ -234,6 +236,7 @@ ID_IE ID_IE(
     .clk(clk),
     .reset(reset),
     .flush(FlushE),
+    .en(~global_cache_stall),
     .rd1D(RD1D),
     .rd2D(RD2D),
     .PCD(PCD),
@@ -306,6 +309,7 @@ ALU ALU(
 IE_IM IE_IM(
     .clk(clk),
     .reset(reset),
+    .en(~global_cache_stall),
     .ALUResultE(ALUResultE),
     .RD2E(SrcB),
     .RegWriteE(RegWriteE),
@@ -343,11 +347,13 @@ dcache data_cache(
     .hit       (dcache_hit),
     .stall     (dcache_stall),
 
+    .mem_req   (dcache_mem_req),
     .mem_we    (dcache_mem_we),
     .mem_be    (dcache_mem_be),
     .mem_addr  (dcache_mem_addr),
     .mem_wdata (dcache_mem_wdata),
-    .mem_rdata (dcache_mem_rdata)
+    .mem_rdata (dcache_mem_rdata),
+    .mem_ready (dcache_mem_ready)
 );
 
 data_mem data_memory(
@@ -356,7 +362,8 @@ data_mem data_memory(
     .be       (dcache_mem_be),
     .A        (dcache_mem_addr),
     .WD       (dcache_mem_wdata),
-    .ReadData (dcache_mem_rdata)
+    .ReadData (dcache_mem_rdata),
+    .ready    (dcache_mem_ready)
 );
 
 /////////////////////////
@@ -366,6 +373,7 @@ data_mem data_memory(
 IM_IW IM_IW(
     .clk(clk),
     .reset(reset),
+    .en(~global_cache_stall),
     .ALUResultM(ALUResultM),
     .ReadDataM(ReadDataM),
     .PCPlus4M(PCPlus4M),

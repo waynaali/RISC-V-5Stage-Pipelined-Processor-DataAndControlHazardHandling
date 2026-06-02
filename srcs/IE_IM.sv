@@ -1,6 +1,7 @@
 module IE_IM(
     input  logic        clk,
     input  logic        reset,
+    input  logic        en,
 
     input  logic [31:0] ALUResultE,
     input  logic [31:0] RD2E,
@@ -23,23 +24,24 @@ module IE_IM(
 
     always_ff @(posedge clk) begin
         if (reset) begin
-            ALUResultM  <= 32'b0;
-            RD2M        <= 32'b0;
-            rdM         <= 5'b0;
-            PCPlus4M    <= 32'b0;
-            RegWriteM   <= 1'b0;
-            MemWriteM   <= 1'b0;
-            ResultSrcM  <= 2'b0;
-            funct3M     <= 3'b0;
-        end else begin
-            ALUResultM  <= ALUResultE;
-            RD2M        <= RD2E;
-            rdM         <= rdE;
-            PCPlus4M    <= PCPlus4E;
-            RegWriteM   <= RegWriteE;
-            MemWriteM   <= MemWriteE;
-            ResultSrcM  <= ResultSrcE;
-            funct3M     <= funct3E;
+            ALUResultM <= 32'b0;
+            RD2M       <= 32'b0;
+            RegWriteM  <= 1'b0;
+            MemWriteM  <= 1'b0;
+            ResultSrcM <= 2'b0;
+            rdM        <= 5'b0;
+            PCPlus4M   <= 32'b0;
+            funct3M    <= 3'b0;
+        end
+        else if (en) begin
+            ALUResultM <= ALUResultE;
+            RD2M       <= RD2E;
+            RegWriteM  <= RegWriteE;
+            MemWriteM  <= MemWriteE;
+            ResultSrcM <= ResultSrcE;
+            rdM        <= rdE;
+            PCPlus4M   <= PCPlus4E;
+            funct3M    <= funct3E;
         end
     end
 
