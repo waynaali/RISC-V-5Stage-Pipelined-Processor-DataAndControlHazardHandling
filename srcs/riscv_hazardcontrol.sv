@@ -21,6 +21,8 @@ logic [31:0] icache_mem_addr;
 logic [31:0] icache_mem_rdata;
 logic        icache_hit;
 logic        icache_stall;
+logic        icache_mem_req;
+logic        icache_mem_ready;
 
 /////////////////////////
 // D-Cache Signals
@@ -72,6 +74,12 @@ logic [31:0] PCPlus4D, PCPlus4E, PCPlus4M, PCPlus4W, PCPlus4F;
 // Register Addresses
 /////////////////////////
 logic [4:0] rs1E, rs2E, rdE, rdM, rdW;
+
+/////////////////////////
+// Cache Stall Logic
+/////////////////////////
+logic global_cache_stall;
+assign global_cache_stall = icache_stall | dcache_stall;
 
 /////////////////////////
 // PC Source Logic
@@ -132,7 +140,7 @@ mux2 PC_Next(
 program_counter ProgramCounter(
     .clk(clk),
     .reset(reset),
-    .en(~StallF),
+    .en(~(StallF | global_cache_stall)),
     .PCNext(PCNext),
     .PC(PCF)
 );
@@ -141,6 +149,7 @@ program_counter ProgramCounter(
 // I-Cache + Instruction Memory
 /////////////////////////
 
+// I-Cache between PC and Instruction Memory
 icache instruction_cache(
     .clk       (clk),
     .rst       (reset),
@@ -148,14 +157,19 @@ icache instruction_cache(
     .cpu_instr (InstrF),
     .hit       (icache_hit),
     .stall     (icache_stall),
+    .mem_req   (icache_mem_req),
     .mem_addr  (icache_mem_addr),
-    .mem_rdata (icache_mem_rdata)
+    .mem_rdata (icache_mem_rdata),
+    .mem_ready (icache_mem_ready)
 );
 
+// Lower Instruction Memory behind I-Cache
 instr_mem instruction_memory(
     .A  (icache_mem_addr),
     .RD (icache_mem_rdata)
 );
+
+assign icache_mem_ready = 1'b1;
 
 /////////////////////////
 // IF/ID Pipeline Register
@@ -165,7 +179,7 @@ IF_ID IF_ID(
     .clk(clk),
     .reset(reset),
     .flush(FlushD),
-    .en(~StallD),
+    .en(~(StallD | global_cache_stall)),
     .InstrF(InstrF),
     .PCF(PCF),
     .PCPlus4F(PCPlus4F),
@@ -173,7 +187,6 @@ IF_ID IF_ID(
     .PCD(PCD),
     .PCPlus4D(PCPlus4D)
 );
-
 register_file register_file(
     .clk(clk),
     .A1(InstrD[19:15]),

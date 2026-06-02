@@ -24,18 +24,19 @@ module tb_risc;
         $finish;
     end
 
-    // Console monitor for cache verification
     initial begin
-        $display("Time\tPCF\t\tInstrF\t\tIHit\tALUAddrM\tWDataM\t\tRDataM\t\tDHit\tDWe\tDBe");
-        $monitor("%0t\t%h\t%h\t%b\t%h\t%h\t%h\t%b\t%b\t%b",
+        $display("Time\tPCF\t\tInstrF\t\tIHit\tIStall\tDAddr\t\tWData\t\tRData\t\tDHit\tDStall\tDWe\tDBe");
+        $monitor("%0t\t%h\t%h\t%b\t%b\t%h\t%h\t%h\t%b\t%b\t%b\t%b",
                  $time,
                  top.PCF,
                  top.InstrF,
                  top.icache_hit,
+                 top.icache_stall,
                  top.ALUResultM,
                  top.RD2M,
                  top.ReadDataM,
                  top.dcache_hit,
+                 top.dcache_stall,
                  top.dcache_mem_we,
                  top.dcache_mem_be);
     end
