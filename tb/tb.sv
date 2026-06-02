@@ -10,34 +10,34 @@ module tb_risc;
         .reset(reset)
     );
 
+    // 100 MHz clock
     always #5 clk = ~clk;
 
     initial begin
         clk   = 0;
         reset = 1;
 
-        #20 reset = 0;
+        #20;
+        reset = 0;
 
-        #2000 $finish;
+        #2000;
+        $finish;
     end
 
-    // Waveform dump for GTKWave / XSim
+    // Console monitor for cache verification
     initial begin
-        $dumpfile("icache_wave.vcd");
-        $dumpvars(0, tb_risc);
-    end
-
-    // I-Cache verification monitor
-    initial begin
-        $display("Time\tPCF\t\tInstrF\t\tMemAddr\t\tMemData\t\tHit\tStall");
-        $monitor("%0t\t%h\t%h\t%h\t%h\t%b\t%b",
+        $display("Time\tPCF\t\tInstrF\t\tIHit\tALUAddrM\tWDataM\t\tRDataM\t\tDHit\tDWe\tDBe");
+        $monitor("%0t\t%h\t%h\t%b\t%h\t%h\t%h\t%b\t%b\t%b",
                  $time,
                  top.PCF,
                  top.InstrF,
-                 top.icache_mem_addr,
-                 top.icache_mem_rdata,
                  top.icache_hit,
-                 top.icache_stall);
+                 top.ALUResultM,
+                 top.RD2M,
+                 top.ReadDataM,
+                 top.dcache_hit,
+                 top.dcache_mem_we,
+                 top.dcache_mem_be);
     end
 
 endmodule

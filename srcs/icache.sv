@@ -28,13 +28,8 @@ module icache (
     assign mem_addr = cpu_addr;
 
     always_comb begin
-        hit = valid_array[index] && (tag_array[index] == tag);
-
-        // For first integration, no pipeline stall
-        stall = 1'b0;
-
-        // On hit: instruction from cache
-        // On miss: instruction directly from instr_mem
+        hit       = valid_array[index] && (tag_array[index] == tag);
+        stall     = 1'b0;
         cpu_instr = hit ? data_array[index] : mem_rdata;
     end
 
@@ -47,8 +42,7 @@ module icache (
                 tag_array[i]   <= '0;
                 data_array[i]  <= 32'b0;
             end
-        end
-        else begin
+        end else begin
             if (!hit) begin
                 valid_array[index] <= 1'b1;
                 tag_array[index]   <= tag;

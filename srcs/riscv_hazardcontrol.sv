@@ -12,7 +12,7 @@ logic ZeroE;
 logic StallF, StallD;
 logic FlushE, FlushD;
 logic PCSrcE;
-logic [2:0] funct3E;
+logic [2:0] funct3E, funct3M;
 
 /////////////////////////
 // I-Cache Signals
@@ -21,6 +21,17 @@ logic [31:0] icache_mem_addr;
 logic [31:0] icache_mem_rdata;
 logic        icache_hit;
 logic        icache_stall;
+
+/////////////////////////
+// D-Cache Signals
+/////////////////////////
+logic        dcache_hit;
+logic        dcache_stall;
+logic        dcache_mem_we;
+logic [3:0]  dcache_mem_be;
+logic [31:0] dcache_mem_addr;
+logic [31:0] dcache_mem_wdata;
+logic [31:0] dcache_mem_rdata;
 
 /////////////////////////
 // Forwarding Unit Signals
@@ -44,7 +55,6 @@ logic [1:0] ImmSrcD;
 logic [31:0] SrcAE, SrcBE, SrcB;
 logic [31:0] ALUResultE, ALUResultM, ALUResultW;
 logic [31:0] ReadDataM, ReadDataW;
-logic [31:0] WriteDataE;
 logic [31:0] PCTargetE, PCNext;
 logic [31:0] ResultW;
 logic [31:0] RD1D, RD2D;
@@ -61,7 +71,7 @@ logic [31:0] PCPlus4D, PCPlus4E, PCPlus4M, PCPlus4W, PCPlus4F;
 /////////////////////////
 // Register Addresses
 /////////////////////////
-logic [4:0] rs1E, rs2E, Rs1D, Rs2D, rdE, rdM, rdW;
+logic [4:0] rs1E, rs2E, rdE, rdM, rdW;
 
 /////////////////////////
 // PC Source Logic
@@ -74,12 +84,12 @@ always_comb begin
     end
     else if (BranchE) begin
         case (funct3E)
-            3'b000: PCSrcE =  ZeroE;
-            3'b001: PCSrcE = ~ZeroE;
-            3'b100: PCSrcE = ($signed(SrcAE) < $signed(SrcB));
-            3'b101: PCSrcE = ($signed(SrcAE) >= $signed(SrcB));
-            3'b110: PCSrcE = (SrcAE < SrcB);
-            3'b111: PCSrcE = (SrcAE >= SrcB);
+            3'b000: PCSrcE =  ZeroE;                          // BEQ
+            3'b001: PCSrcE = ~ZeroE;                          // BNE
+            3'b100: PCSrcE = ($signed(SrcAE) <  $signed(SrcB));// BLT
+            3'b101: PCSrcE = ($signed(SrcAE) >= $signed(SrcB));// BGE
+            3'b110: PCSrcE = (SrcAE <  SrcB);                  // BLTU
+            3'b111: PCSrcE = (SrcAE >= SrcB);                  // BGEU
             default: PCSrcE = 1'b0;
         endcase
     end
@@ -100,10 +110,24 @@ forwarding_unit forwarding_unit(
     .ForwardBE(ForwardBE)
 );
 
-Adder PC_Plus_4(.A(PCF), .B(32'd4), .Sum(PCPlus4F));
-Adder PC_Target(.A(PCE), .B(ImmExtendE), .Sum(PCTargetE));
+Adder PC_Plus_4(
+    .A(PCF),
+    .B(32'd4),
+    .Sum(PCPlus4F)
+);
 
-mux2 PC_Next(.d0(PCPlus4F), .d1(PCTargetE), .s(PCSrcE), .y(PCNext));
+Adder PC_Target(
+    .A(PCE),
+    .B(ImmExtendE),
+    .Sum(PCTargetE)
+);
+
+mux2 PC_Next(
+    .d0(PCPlus4F),
+    .d1(PCTargetE),
+    .s(PCSrcE),
+    .y(PCNext)
+);
 
 program_counter ProgramCounter(
     .clk(clk),
@@ -113,7 +137,10 @@ program_counter ProgramCounter(
     .PC(PCF)
 );
 
-// I-Cache between PC and Instruction Memory
+/////////////////////////
+// I-Cache + Instruction Memory
+/////////////////////////
+
 icache instruction_cache(
     .clk       (clk),
     .rst       (reset),
@@ -125,11 +152,14 @@ icache instruction_cache(
     .mem_rdata (icache_mem_rdata)
 );
 
-// Lower Instruction Memory behind I-Cache
 instr_mem instruction_memory(
     .A  (icache_mem_addr),
     .RD (icache_mem_rdata)
 );
+
+/////////////////////////
+// IF/ID Pipeline Register
+/////////////////////////
 
 IF_ID IF_ID(
     .clk(clk),
@@ -256,32 +286,69 @@ ALU ALU(
     .Zero(ZeroE)
 );
 
+/////////////////////////
+// EX/MEM Pipeline Register
+/////////////////////////
+
 IE_IM IE_IM(
     .clk(clk),
     .reset(reset),
     .ALUResultE(ALUResultE),
     .RD2E(SrcB),
-    .RegWriteM(RegWriteM),
-    .MemWriteM(MemWriteM),
-    .ResultSrcM(ResultSrcM),
     .RegWriteE(RegWriteE),
     .MemWriteE(MemWriteE),
     .ResultSrcE(ResultSrcE),
     .rdE(rdE),
     .PCPlus4E(PCPlus4E),
+    .funct3E(funct3E),
+
     .ALUResultM(ALUResultM),
     .RD2M(RD2M),
+    .RegWriteM(RegWriteM),
+    .MemWriteM(MemWriteM),
+    .ResultSrcM(ResultSrcM),
     .rdM(rdM),
-    .PCPlus4M(PCPlus4M)
+    .PCPlus4M(PCPlus4M),
+    .funct3M(funct3M)
+);
+
+/////////////////////////
+// D-Cache + Data Memory
+/////////////////////////
+
+dcache data_cache(
+    .clk       (clk),
+    .rst       (reset),
+
+    .mem_read  (ResultSrcM[0]),
+    .mem_write (MemWriteM),
+    .funct3    (funct3M),
+    .cpu_addr  (ALUResultM),
+    .cpu_wdata (RD2M),
+    .cpu_rdata (ReadDataM),
+
+    .hit       (dcache_hit),
+    .stall     (dcache_stall),
+
+    .mem_we    (dcache_mem_we),
+    .mem_be    (dcache_mem_be),
+    .mem_addr  (dcache_mem_addr),
+    .mem_wdata (dcache_mem_wdata),
+    .mem_rdata (dcache_mem_rdata)
 );
 
 data_mem data_memory(
-    .clk(clk),
-    .we(MemWriteM),
-    .A(ALUResultM),
-    .WD(RD2M),
-    .ReadData(ReadDataM)
+    .clk      (clk),
+    .we       (dcache_mem_we),
+    .be       (dcache_mem_be),
+    .A        (dcache_mem_addr),
+    .WD       (dcache_mem_wdata),
+    .ReadData (dcache_mem_rdata)
 );
+
+/////////////////////////
+// MEM/WB Pipeline Register
+/////////////////////////
 
 IM_IW IM_IW(
     .clk(clk),
