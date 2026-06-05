@@ -30,13 +30,14 @@ module dcache (
     logic valid_array [0:CACHE_LINES-1];
 
     logic [INDEX_BITS-1:0] index;
-    logic [TAG_BITS-1:0] tag;
-    logic [1:0] offset;
-
+    logic [TAG_BITS-1:0]   tag;
+    logic [1:0]            offset;
+    logic store_done;
     typedef enum logic [1:0] {
         IDLE,
         READ_MISS,
-        WRITE_WAIT
+        WRITE_WAIT,
+        COMPLETE
     } state_t;
 
     state_t state;
@@ -52,7 +53,7 @@ module dcache (
         input logic [1:0]  off,
         input logic [2:0]  f3
     );
-        logic [7:0] b;
+        logic [7:0]  b;
         logic [15:0] h;
         begin
             case (off)
@@ -140,37 +141,46 @@ module dcache (
                         mem_we  = 1'b0;
                         stall   = 1'b1;
                     end
-                end
-
-                else if (mem_write) begin
+                end else if (mem_write && !store_done) begin
                     mem_req   = 1'b1;
                     mem_we    = 1'b1;
                     mem_be    = gen_be(offset, funct3);
                     mem_wdata = align_store_data(cpu_wdata, offset, funct3);
-
-                    // Fix: with ready memory, store should complete immediately
-                    stall = ~mem_ready;
-                end
+                    stall     = 1'b1;
+                end 
+                else if (mem_write && store_done) begin
+                    mem_req = 1'b0;
+                    mem_we  = 1'b0;
+                    stall   = 1'b0;
+                    end
             end
 
             READ_MISS: begin
                 mem_req = 1'b1;
                 mem_we  = 1'b0;
-                stall   = 1'b1;
+                stall   = ~mem_ready;
 
-                if (mem_ready) begin
+                if (mem_ready)
                     cpu_rdata = load_extend(mem_rdata, offset, funct3);
-                end
             end
 
             WRITE_WAIT: begin
                 mem_req   = 1'b1;
                 mem_we    = 1'b1;
                 mem_be    = gen_be(offset, funct3);
-                mem_addr  = {cpu_addr[31:2], 2'b00};
                 mem_wdata = align_store_data(cpu_wdata, offset, funct3);
+                stall     = ~mem_ready;
+            end
 
-                stall = ~mem_ready;
+            COMPLETE: begin
+                // One clean cycle after memory response.
+                // Prevents the same store from being re-issued.
+                mem_req = 1'b0;
+                mem_we  = 1'b0;
+                stall   = 1'b0;
+
+                if (mem_read && hit)
+                    cpu_rdata = load_extend(data_array[index], offset, funct3);
             end
 
             default: begin
@@ -196,21 +206,19 @@ module dcache (
                 IDLE: begin
                     if (mem_read && !hit) begin
                         state <= READ_MISS;
-                    end
-
-                    else if (mem_write) begin
-                        valid_array[index] <= 1'b1;
-                        tag_array[index]   <= tag;
-                        data_array[index]  <= update_word(
-                            hit ? data_array[index] : mem_rdata,
-                            align_store_data(cpu_wdata, offset, funct3),
-                            gen_be(offset, funct3)
-                        );
-
-                        if (!mem_ready)
+                    end else if (mem_write) begin
+                        if (mem_ready) begin
+                            valid_array[index] <= 1'b1;
+                            tag_array[index]   <= tag;
+                            data_array[index]  <= update_word(
+                                hit ? data_array[index] : mem_rdata,
+                                align_store_data(cpu_wdata, offset, funct3),
+                                gen_be(offset, funct3)
+                            );
+                            state <= COMPLETE;
+                        end else begin
                             state <= WRITE_WAIT;
-                        else
-                            state <= IDLE;
+                        end
                     end
                 end
 
@@ -219,7 +227,7 @@ module dcache (
                         valid_array[index] <= 1'b1;
                         tag_array[index]   <= tag;
                         data_array[index]  <= mem_rdata;
-                        state              <= IDLE;
+                        state              <= COMPLETE;
                     end
                 end
 
@@ -232,9 +240,12 @@ module dcache (
                             align_store_data(cpu_wdata, offset, funct3),
                             gen_be(offset, funct3)
                         );
-
-                        state <= IDLE;
+                        state <= COMPLETE;
                     end
+                end
+
+                COMPLETE: begin
+                    state <= IDLE;
                 end
 
                 default: begin

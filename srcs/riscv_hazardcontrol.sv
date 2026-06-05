@@ -84,6 +84,27 @@ logic global_cache_stall;
 assign global_cache_stall = icache_stall | dcache_stall;
 
 /////////////////////////
+// AXI Interface Signals
+/////////////////////////
+logic [31:0] axi_awaddr;
+logic        axi_awvalid;
+logic        axi_awready;
+logic [31:0] axi_wdata;
+logic [3:0]  axi_wstrb;
+logic        axi_wvalid;
+logic        axi_wready;
+logic [1:0]  axi_bresp;
+logic        axi_bvalid;
+logic        axi_bready;
+logic [31:0] axi_araddr;
+logic        axi_arvalid;
+logic        axi_arready;
+logic [31:0] axi_rdata;
+logic [1:0]  axi_rresp;
+logic        axi_rvalid;
+logic        axi_rready;
+
+/////////////////////////
 // PC Source Logic
 /////////////////////////
 always_comb begin
@@ -165,13 +186,73 @@ icache instruction_cache(
     .mem_ready (icache_mem_ready)
 );
 
-// Lower Instruction Memory behind I-Cache
-instr_mem instruction_memory(
-    .A  (icache_mem_addr),
-    .RD (icache_mem_rdata)
+// AXI Lite Master to connect caches to memory
+cache_axi_lite_master axi_master_wrapper (
+    .clk(clk),
+    .reset(reset),
+
+    .i_req   (icache_mem_req),
+    .i_addr  (icache_mem_addr),
+    .i_rdata (icache_mem_rdata),
+    .i_ready (icache_mem_ready),
+
+    .d_req   (dcache_mem_req),
+    .d_we    (dcache_mem_we),
+    .d_be    (dcache_mem_be),
+    .d_addr  (dcache_mem_addr),
+    .d_wdata (dcache_mem_wdata),
+    .d_rdata (dcache_mem_rdata),
+    .d_ready (dcache_mem_ready),
+
+    .M_AXI_AWADDR  (axi_awaddr),
+    .M_AXI_AWVALID (axi_awvalid),
+    .M_AXI_AWREADY (axi_awready),
+
+    .M_AXI_WDATA   (axi_wdata),
+    .M_AXI_WSTRB   (axi_wstrb),
+    .M_AXI_WVALID  (axi_wvalid),
+    .M_AXI_WREADY  (axi_wready),
+
+    .M_AXI_BRESP   (axi_bresp),
+    .M_AXI_BVALID  (axi_bvalid),
+    .M_AXI_BREADY  (axi_bready),
+
+    .M_AXI_ARADDR  (axi_araddr),
+    .M_AXI_ARVALID (axi_arvalid),
+    .M_AXI_ARREADY (axi_arready),
+
+    .M_AXI_RDATA   (axi_rdata),
+    .M_AXI_RRESP   (axi_rresp),
+    .M_AXI_RVALID  (axi_rvalid),
+    .M_AXI_RREADY  (axi_rready)
 );
 
-assign icache_mem_ready = 1'b1;
+axi_lite_ram axi_memory (
+    .clk(clk),
+    .reset(reset),
+
+    .S_AXI_AWADDR  (axi_awaddr),
+    .S_AXI_AWVALID (axi_awvalid),
+    .S_AXI_AWREADY (axi_awready),
+
+    .S_AXI_WDATA   (axi_wdata),
+    .S_AXI_WSTRB   (axi_wstrb),
+    .S_AXI_WVALID  (axi_wvalid),
+    .S_AXI_WREADY  (axi_wready),
+
+    .S_AXI_BRESP   (axi_bresp),
+    .S_AXI_BVALID  (axi_bvalid),
+    .S_AXI_BREADY  (axi_bready),
+
+    .S_AXI_ARADDR  (axi_araddr),
+    .S_AXI_ARVALID (axi_arvalid),
+    .S_AXI_ARREADY (axi_arready),
+
+    .S_AXI_RDATA   (axi_rdata),
+    .S_AXI_RRESP   (axi_rresp),
+    .S_AXI_RVALID  (axi_rvalid),
+    .S_AXI_RREADY  (axi_rready)
+);
 
 /////////////////////////
 // IF/ID Pipeline Register
@@ -355,17 +436,6 @@ dcache data_cache(
     .mem_rdata (dcache_mem_rdata),
     .mem_ready (dcache_mem_ready)
 );
-
-data_mem data_memory(
-    .clk      (clk),
-    .we       (dcache_mem_we),
-    .be       (dcache_mem_be),
-    .A        (dcache_mem_addr),
-    .WD       (dcache_mem_wdata),
-    .ReadData (dcache_mem_rdata),
-    .ready    (dcache_mem_ready)
-);
-
 /////////////////////////
 // MEM/WB Pipeline Register
 /////////////////////////

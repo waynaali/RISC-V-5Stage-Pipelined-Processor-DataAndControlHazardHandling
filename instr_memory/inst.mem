@@ -1,60 +1,66 @@
-00500113
-00C00193
-FF718393
-0023E233
-0041F2B3
-004282B3
-02728863
-0041A233
-00020463
-00000293
-0023A233
-005203B3
-402383B3
-0471AA23
-06002103
-005104B3
-008001EF
-00100113
-00910133
-0221A023
-// load store instructions (lw sw lb lh lbu lhu sb sh)
+10000513
 06400093
-00102023
-00002103
-00002183
-00100223
-00400203
-00101423
-00801283
-00404303
-00805383
-// nop for avoid infinite loop
-00000063
-00000013
-00000013
-00000013
-00000013
+00500113
+00c00193
+00310233
+002202b3
+00c2f333
+00c163b3
+00c12433
+00152023
+00052483
+002485b3
+00b52223
+00452603
+00150423
+00850683
+00454703
+00151623
+00c51783
+00455803
+00e68463
+00100893
+01079463
+01078933
+00c009ef
+00900a13
+ff000f93
+0000006f
 
-//main:               RISC-V Assembly           Description             Address  Machine Code
-//                    addi x2, x0, 5             x2 = 5                   0        00500113
-//                    addi x3, x0, 12            x3 = 12                  4        00C00193
-//                    addi x7, x3, -9            x7 = (12 - 9) = 3        8        FF718393
-//                    or x4, x7, x2              x4 = (3 OR 5) = 7        C        00238233
-//                    and x5, x3, x4             x5 = (12 AND 7) = 4     10        0041F2B3
-//                    add x5, x5, x4             x5 = 4 + 7 = 11         14        004282B3
-//                    beq x5, x7, end            shouldn't be taken      18        02728863
-//                    slt x4, x3, x4             x4 = (12 < 7) = 0       1C        0041A233
-//                    beq x4, x0, around         should be taken         20        00020463
-//                    addi x5, x0, 0             shouldn't execute       24        00000293
-//  around:           slt x4, x7, x2             x4 = (3 < 5) = 1        28        0023A233
-//                    add x7, x4, x5             x7 = (1 + 11) = 12      2C        005203B3
-//                    sub x7, x7, x2             x7 = (12 - 5) = 7       30        402383B3
-//                    sw x7, 84(x3)              [96] = 7                34        0471AA23
-//                    lw x2, 96(x0)              x2 = [96] = 7           38        06002103
-//                    add x9, x2, x5             x9 = (7 + 11) = 18      3C        005104B3
-//                    jal x3, end                jump to end, x3=0x44    40        008001EF
-//                    addi x2, x0, 1             shouldn't execute       44        00100113
-//   end:             add x2, x2, x9             x2 = (7 + 18) = 25      4B        00910133
-//                    sw x2, 0x20(x3)            [100] = 25              4C        0221A023
-//  done:             beq x2, x2, done           infinite loop           50        00210063
+// RV32I Cache + AXI Verification Program
+// Data base = 0x100
+
+//main:
+//    addi x10, x0, 256      # x10 = 0x100 data base
+//    addi x1,  x0, 100      # x1 = 100
+//    addi x2,  x0, 5        # x2 = 5
+//    addi x3,  x0, 12       # x3 = 12
+//    add  x4,  x2, x3       # x4 = 17
+//    sub  x5,  x4, x2       # x5 = 12
+//    and  x6,  x5, x3       # x6 = 12
+//    or   x7,  x2, x3       # x7 = 13
+//    slt  x8,  x2, x3       # x8 = 1
+
+//    sw   x1,  0(x10)       # [0x100] = 100
+//    lw   x9,  0(x10)       # x9 = 100
+
+//    add  x11, x9, x2       # dependency: x11 = 105
+//    sw   x11, 4(x10)       # [0x104] = 105
+//    lw   x12, 4(x10)       # x12 = 105
+//    sb   x1,  8(x10)       # byte store 100
+//    lb   x13, 8(x10)       # signed byte load
+//    lbu  x14, 8(x10)       # unsigned byte load
+//    sh   x1,  12(x10)      # halfword store 100
+//    lh   x15, 12(x10)      # signed halfword load
+//    lhu  x16, 12(x10)      # unsigned halfword load
+//    beq  x13, x14, label1  # should be taken
+//    addi x17, x0, 1        # should not execute
+//label1:
+//    bne  x15, x16, error   # should not be taken
+//    add  x18, x15, x16     # x18 = 200
+//    jal  x19, done         # jump to done
+//    addi x20, x0, 9        # should not execute
+//error:
+//    addi x31, x0, -1       # error flag
+//done:
+//    beq  x0, x0, done      # infinite loop
