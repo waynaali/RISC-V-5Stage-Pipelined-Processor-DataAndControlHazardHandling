@@ -115,12 +115,12 @@ always_comb begin
     end
     else if (BranchE) begin
         case (funct3E)
-            3'b000: PCSrcE =  ZeroE;                          // BEQ
-            3'b001: PCSrcE = ~ZeroE;                          // BNE
-            3'b100: PCSrcE = ($signed(SrcAE) <  $signed(SrcB));// BLT
-            3'b101: PCSrcE = ($signed(SrcAE) >= $signed(SrcB));// BGE
-            3'b110: PCSrcE = (SrcAE <  SrcB);                  // BLTU
-            3'b111: PCSrcE = (SrcAE >= SrcB);                  // BGEU
+            3'b000: PCSrcE =  ZeroE;
+            3'b001: PCSrcE = ~ZeroE;
+            3'b100: PCSrcE = ($signed(SrcAE) <  $signed(SrcB));
+            3'b101: PCSrcE = ($signed(SrcAE) >= $signed(SrcB));
+            3'b110: PCSrcE = (SrcAE <  SrcB);
+            3'b111: PCSrcE = (SrcAE >= SrcB);
             default: PCSrcE = 1'b0;
         endcase
     end
@@ -163,11 +163,10 @@ mux2 PC_Next(
 program_counter ProgramCounter(
     .clk(clk),
     .reset(reset),
-    .en(~(StallF | global_cache_stall)),
+    .en(PCSrcE | ~(StallF | global_cache_stall)),
     .PCNext(PCNext),
     .PC(PCF)
 );
-
 /////////////////////////
 // I-Cache + Instruction Memory
 /////////////////////////
@@ -176,6 +175,7 @@ program_counter ProgramCounter(
 icache instruction_cache(
     .clk       (clk),
     .rst       (reset),
+    .flush     (PCSrcE),
     .cpu_addr  (PCF),
     .cpu_instr (InstrF),
     .hit       (icache_hit),
@@ -185,7 +185,6 @@ icache instruction_cache(
     .mem_rdata (icache_mem_rdata),
     .mem_ready (icache_mem_ready)
 );
-
 // AXI Lite Master to connect caches to memory
 cache_axi_lite_master axi_master_wrapper (
     .clk(clk),
