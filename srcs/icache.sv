@@ -132,8 +132,6 @@ module icache (
 
                 MISS_WAIT: begin
                     if (flush) begin
-                        // A branch/JAL redirect happened while old fetch was pending.
-                        // Go wait for old response and discard it.
                         state <= FLUSH_WAIT;
                     end
                     else if (mem_ready) begin
@@ -146,7 +144,6 @@ module icache (
 
                 FLUSH_WAIT: begin
                     if (mem_ready) begin
-                        // Ignore old wrong-path response.
                         state <= IDLE;
                     end
                 end

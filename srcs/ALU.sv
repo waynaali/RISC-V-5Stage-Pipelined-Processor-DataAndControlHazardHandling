@@ -1,27 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 11/07/2025 04:59:58 PM
-// Design Name: Arithmetic Logic Unit (ALU)
-// Module Name: ALU
-// Project Name: 5-Stage Pipelined RISC-V Processor
-// Target Devices: FPGA / ASIC
-// Tool Versions: Any SystemVerilog compatible
-// Description: 
-//      This module implements the 32-bit ALU used in the Execute stage of the
-//      5-stage pipelined RISC-V processor. It performs arithmetic and logic
-//      operations based on the ALUControl signal.
-// 
-// Dependencies: None
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//      - Supports ADD, SUB, AND, OR, and SLT operations.
-//      - Outputs a Zero flag for branch decisions.
-//////////////////////////////////////////////////////////////////////////////////
 
 module ALU(
     input  logic [31:0] SrcA,      // Operand A

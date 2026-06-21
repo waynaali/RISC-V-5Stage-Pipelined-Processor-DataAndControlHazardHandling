@@ -1,66 +1,74 @@
 10000513
 06400093
+06900593
 00500113
-00c00193
+00C00193
 00310233
-002202b3
-00c2f333
-00c163b3
-00c12433
+402202B3
+0032F333
+003163B3
+00312433
 00152023
+00000013
+00B52223
+00000013
 00052483
-002485b3
-00b52223
+06400493
 00452603
+06900613
 00150423
+00000013
 00850683
-00454703
+06400693
+00854703
+06400713
 00151623
-00c51783
-00455803
-00e68463
-00100893
-01079463
-01078933
-00c009ef
-00900a13
-ff000f93
-0000006f
+00000013
+00C51783
+06400793
+00C55803
+06400813
+0C800913
+00100993
+0000006F
+0000006F
+0000006F
+0000006F
 
-// RV32I Cache + AXI Verification Program
-// Data base = 0x100
-
-//main:
-//    addi x10, x0, 256      # x10 = 0x100 data base
-//    addi x1,  x0, 100      # x1 = 100
-//    addi x2,  x0, 5        # x2 = 5
-//    addi x3,  x0, 12       # x3 = 12
-//    add  x4,  x2, x3       # x4 = 17
-//    sub  x5,  x4, x2       # x5 = 12
-//    and  x6,  x5, x3       # x6 = 12
-//    or   x7,  x2, x3       # x7 = 13
-//    slt  x8,  x2, x3       # x8 = 1
-
-//    sw   x1,  0(x10)       # [0x100] = 100
-//    lw   x9,  0(x10)       # x9 = 100
-
-//    add  x11, x9, x2       # dependency: x11 = 105
-//    sw   x11, 4(x10)       # [0x104] = 105
-//    lw   x12, 4(x10)       # x12 = 105
-//    sb   x1,  8(x10)       # byte store 100
-//    lb   x13, 8(x10)       # signed byte load
-//    lbu  x14, 8(x10)       # unsigned byte load
-//    sh   x1,  12(x10)      # halfword store 100
-//    lh   x15, 12(x10)      # signed halfword load
-//    lhu  x16, 12(x10)      # unsigned halfword load
-//    beq  x13, x14, label1  # should be taken
-//    addi x17, x0, 1        # should not execute
-//label1:
-//    bne  x15, x16, error   # should not be taken
-//    add  x18, x15, x16     # x18 = 200
-//    jal  x19, done         # jump to done
-//    addi x20, x0, 9        # should not execute
-//error:
-//    addi x31, x0, -1       # error flag
-//done:
-//    beq  x0, x0, done      # infinite loop
+//Address 	Instruction	            Result	                    Machine_Code
+//0x00	    addi x10, x0, 256	    # x10 = 0x100 data base	    10000513
+//0x04     	addi x1,  x0, 100	    # x1 = 100                  06400093
+//0x08    	addi x11, x0, 105	    # x11 = 105                 06900593
+//0x0C    	addi x2,  x0, 5	        # x2 = 5                	00500113
+//0x10    	addi x3,  x0, 12	    # x3 = 12   	            00C00193
+//0x14    	add  x4,  x2, x3	    # x4 = 17               	00310233
+//0x18    	sub  x5,  x4, x2	    # x5 = 12               	402202B3
+//0x1C    	and  x6,  x5, x3    	# x6 = 12               	0032F333
+//0x1D    	or   x7,  x2, x3    	# x7 = 13               	003163B3
+//0x24    	slt  x8,  x2, x3    	# x8 = 1	                00312433
+//0x28    	sw   x1,  0(x10)    	# [0x100] = 100	            00152023
+//0x2C	    addi x0,  x0, 0    	    # NOP                       00000013
+//0x30    	sw   x11, 4(x10)    	# [0x104] = 105	            00B52223
+//0x34    	addi x0,  x0, 0    	    # NOP                       00000013
+//0x38    	lw   x9,  0(x10)    	# x9 = 100              	00052483
+//0x3C	    addi x9,  x0, 100    	# x9 = 100                  06400493
+//0x40	    lw   x12, 4(x10)    	# x12 = 105                 00452603
+//0x44	    addi x12, x0, 105    	# x12 = 105                 06900613
+//0x48    	sb   x1,  8(x10)    	# byte store 100	        00150423
+//0x4C    	addi x0,  x0, 0    	    # NOP                       00000013
+//0x50    	lb   x13, 8(x10)    	# signed byte load	        00850683
+//0x54    	addi x13, x0, 100    	# x13 = 100                 06400693
+//0x58    	lbu  x14, 8(x10)    	# unsigned byte load	    00854703
+//0x5C    	addi x14, x0, 100    	# x14 = 100                 06400713
+//0x60    	sh   x1,  12(x10)    	# halfword store 100	    00151623
+//0x64    	addi x0,  x0, 0    	    # NOP                       00000013
+//0x68    	lh   x15, 12(x10)    	# signed halfword load	    00C51783
+//0x6C    	addi x15, x0, 100    	# x15 = 100                 06400793
+//0x70    	lhu  x16, 12(x10)    	# unsigned halfword load	00C55803
+//0x74    	addi x16, x0, 100    	# x16 = 100                 06400813
+//0x78    	addi x18, x0, 200    	# x18 = 200                 0C800913
+//0x7C    	addi x19, x0, 1     	# x19 = 1                   00100993
+//0x80    	jal  x0,  0     	    # Infinite Loop             0000006F
+//0x84    	jal  x0,  0     	    # Infinite Loop             0000006F
+//0x88    	jal  x0,  0     	    # Infinite Loop             0000006F
+//0x8C    	jal  x0,  0     	    # Infinite Loop             0000006F

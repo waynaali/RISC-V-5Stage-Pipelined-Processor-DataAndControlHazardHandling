@@ -5,6 +5,8 @@ module IE_IM(
 
     input  logic [31:0] ALUResultE,
     input  logic [31:0] RD2E,
+    input  logic [4:0]  rs2E,
+
     input  logic        RegWriteE,
     input  logic        MemWriteE,
     input  logic [1:0]  ResultSrcE,
@@ -14,6 +16,8 @@ module IE_IM(
 
     output logic [31:0] ALUResultM,
     output logic [31:0] RD2M,
+    output logic [4:0]  rs2M,
+
     output logic        RegWriteM,
     output logic        MemWriteM,
     output logic [1:0]  ResultSrcM,
@@ -26,6 +30,8 @@ module IE_IM(
         if (reset) begin
             ALUResultM <= 32'b0;
             RD2M       <= 32'b0;
+            rs2M       <= 5'b0;
+
             RegWriteM  <= 1'b0;
             MemWriteM  <= 1'b0;
             ResultSrcM <= 2'b0;
@@ -36,6 +42,8 @@ module IE_IM(
         else if (en) begin
             ALUResultM <= ALUResultE;
             RD2M       <= RD2E;
+            rs2M       <= rs2E;
+
             RegWriteM  <= RegWriteE;
             MemWriteM  <= MemWriteE;
             ResultSrcM <= ResultSrcE;

@@ -1,27 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 11/21/2025 11:58:00 AM
-// Design Name: IM/IW Pipeline Register
-// Module Name: IM_IW
-// Project Name: 5-Stage Pipelined RISC-V Processor
-// Target Devices: FPGA / ASIC
-// Tool Versions: Any SystemVerilog compatible
-// Description: 
-//      This module implements the IM/IW pipeline register used in the 5-stage
-//      RISC-V processor pipeline. It transfers signals from the Memory (IM) stage 
-//      to the Write Back (IW) stage.
-//
-// Dependencies: None
-//
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//      - Synchronous reset initializes all outputs to 0.
-//      - Updates occur on the rising edge of the clock.
-//////////////////////////////////////////////////////////////////////////////////
 
 module IM_IW(
     input  logic        clk,

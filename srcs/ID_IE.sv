@@ -1,30 +1,5 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 11/20/2025 11:56:56 AM
-// Design Name: 
-// Module Name: ID_IE
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-//   This module implements the pipeline register between the ID (Instruction Decode)
-//   and EX (Execute) stages in a pipelined RISC-V processor. 
-//   It captures all signals from the ID stage and passes them to the EX stage 
-//   on the rising edge of the clock. It also supports reset and flush functionality.
-//
-// Dependencies: None
-//
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//   - Flush is used to handle control hazards (e.g., after a branch misprediction).
-//   - Reset clears all outputs to prevent unintended execution during initialization.
-//   - This is a typical "pipeline register" module with synchronous logic.
-//
-//////////////////////////////////////////////////////////////////////////////////
+
 module ID_IE(
     input  logic        clk,
     input  logic        reset,
