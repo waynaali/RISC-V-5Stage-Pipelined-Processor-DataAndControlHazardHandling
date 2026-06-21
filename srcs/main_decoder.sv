@@ -1,27 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 11/13/2025 10:01:58 AM
-// Design Name: Main Decoder
-// Module Name: main_decoder
-// Project Name: 5-Stage Pipelined RISC-V Processor
-// Target Devices: FPGA / ASIC
-// Tool Versions: Any SystemVerilog compatible
-// Description: 
-//      This module generates the primary control signals for the RISC-V processor
-//      based on the opcode of the instruction. These signals are used for
-//      ALU operation selection, register writes, memory access, branching, and jumps.
-// 
-// Dependencies: None
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//      - Uses a control vector internally for easier signal assignment.
-//      - Supports load, store, R-type, I-type, branch, and JAL instructions.
-//////////////////////////////////////////////////////////////////////////////////
 
 module main_decoder(
     input  logic [6:0] op,
