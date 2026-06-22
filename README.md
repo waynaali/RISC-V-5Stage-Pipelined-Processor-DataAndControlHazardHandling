@@ -1,4 +1,4 @@
-# **5-Stage Pipelined RV32I Processor with Cache-Based AXI4 Memory Subsystem**
+ **5-Stage Pipelined RV32I Processor with Cache-Based AXI4 Memory Subsystem**
 
 A **SystemVerilog-based implementation and functional verification** of a 5-stage pipelined RV32I processor integrated with instruction/data caches and an AXI4 memory subsystem. The design demonstrates pipelined instruction execution, hazard handling, cache-based memory communication, and simulation-based verification using a self-checking testbench.
 
